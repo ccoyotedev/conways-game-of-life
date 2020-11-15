@@ -26,6 +26,7 @@ const Container = styled.div<{ open: boolean }>`
   max-width: 300px;
   background-color: white;
   box-shadow: 0px 0px 12px 8px rgba(0,0,0,0.5);
+  z-index: 100;
 
   h2 {
     width: fit-content;

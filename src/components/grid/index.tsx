@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../button';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { TShape } from '../shapeSelector';
 
 const Container = styled.div`
   display: flex;
@@ -8,18 +9,37 @@ const Container = styled.div`
   align-items: center;
 `
 
-const Grid = styled.div<{width: number, height: number}>`
-  display: grid;
-  border: 1px solid black;
-  grid-template-columns: ${({width}) => `repeat(${width}, 10px)`};
-  grid-template-rows: ${({height}) => `repeat(${height}, 10px)`};
-`
-
 const Tile = styled.div<{active: boolean}>`
   border: 0.5px solid rgba(0,0,0,0.1);
   cursor: pointer;
   box-sizing: border-box;
   background-color: ${({active}) => active ? 'black' : 'white'};
+`
+
+const Grid = styled.div<
+  {width: number, height: number, active: boolean, usingBrush: boolean}
+>`
+  display: grid;
+  border: 1px solid black;
+  grid-template-columns: ${({width}) => `repeat(${width}, 1fr)`};
+  grid-template-rows: ${({height}) => `repeat(${height}, 1fr)`};
+  width: 652px;
+  height: 652px;
+
+  ${({active, usingBrush}) => active
+    ? css`
+        ${Tile} {
+          cursor: auto;
+        }
+      `
+    : !usingBrush && css`
+        ${Tile} {
+          :hover {
+            background-color: black;
+          }
+        }
+      `
+    }
 `
 
 const ButtonContainer = styled.div`
@@ -60,29 +80,38 @@ const StopButton = styled.div`
 interface IGridConstructor {
   height: number;
   width: number;
+  selectedShapeBrush: TShape;
 }
 
 interface IGrid {
-  [x: string]: {
-    [y: string]: {
+  [y: string]: {
+    [x: string]: {
       active: boolean;
     }
   }
 }
 
-export default ({height, width}: IGridConstructor) => {
+export default ({height, width, selectedShapeBrush}: IGridConstructor) => {
   const [ grid, setGrid ] = useState<IGrid>({});
   const [ isActive, setIsActive ] = useState(false);
+  const [ hoveredTiles, setHoveredTiles ] = useState<{x: string, y: string}[]>([])
 
   useEffect(() => {
     createGrid()
   }, [height, width]);
 
   useEffect(() => {
+    if (selectedShapeBrush) {
+      setHoveredTiles([])
+    }
+  }, [selectedShapeBrush]);
+
+  useEffect(() => {
     let interval: number = 0;
     if (isActive) {
       interval = setInterval(() => {
-        handleStep();
+        const nextStep = getNextStep();
+        setGrid(nextStep);
       }, 250);
     } else if (!isActive) {
       clearInterval(interval);
@@ -92,10 +121,10 @@ export default ({height, width}: IGridConstructor) => {
 
   const createGrid = () => {
     const newGrid: IGrid = {};
-    for (let x = 0; x < width; x++) {
-      newGrid[x.toString()] = {}
-      for (let y = 0; y < height; y++) {
-        newGrid[x.toString()][y.toString()] = {
+    for (let y = 0; y < width; y++) {
+      newGrid[y.toString()] = {}
+      for (let x = 0; x < height; x++) {
+        newGrid[y.toString()][x.toString()] = {
           active: false,
         }
       }
@@ -103,11 +132,11 @@ export default ({height, width}: IGridConstructor) => {
     setGrid(newGrid)
   }
 
-  const handleStep = () => {
+  const getNextStep = (): IGrid => {
     const g = JSON.parse(JSON.stringify(grid));
 
-    Object.keys(grid).forEach(x => {
-      Object.keys(grid[x]).forEach(y => {
+    Object.keys(grid).forEach(y => {
+      Object.keys(grid[y]).forEach(x => {
         const nX = Number(x);
         const nY = Number(y);
         const adjTiles = [
@@ -138,31 +167,87 @@ export default ({height, width}: IGridConstructor) => {
         }
       })
     })
-    return setGrid(g);
+    return g;
+  }
+
+  const startSimulation = () => {
+    setHoveredTiles([]);
+    setIsActive(false)
   }
 
   const handleClear = () => {
-    createGrid();
     setIsActive(false);
+    createGrid();
+  }
+
+  const handleHover = (x: string, y: string) => {
+    if (isActive) return null;
+
+    const xN = Number(x);
+    const yN = Number(y);
+    switch (selectedShapeBrush) {
+      case "dot":
+        return;
+      case "crawler":
+        return setHoveredTiles(
+          [
+            {x: (xN + 1).toString(), y: (yN + 1).toString()},
+            {x: (xN - 1).toString(), y: yN.toString()},
+            {x: (xN + 1).toString(), y: yN.toString()},
+            {x: xN.toString(), y: (yN + 1).toString()},
+            {x: (xN + 1).toString(), y: (yN - 1).toString()},
+          ]
+        )
+      case undefined:
+        return setHoveredTiles(
+          [
+            {x: xN.toString(), y: (yN - 1).toString()},
+            {x: (xN - 1).toString(), y: yN.toString()},
+            {x: (xN + 1).toString(), y: yN.toString()},
+            {x: xN.toString(), y: (yN + 1).toString()},
+          ]
+        )
+      default:
+        return;
+    }
+ 
   }
 
   const selectTile = (x: string, y: string) => {
+    if (isActive) return null;
     const gridCopy = {...grid};
-    gridCopy[x][y].active = !gridCopy[x][y].active;
+
+    if (selectedShapeBrush === "dot") {
+      gridCopy[x][y].active = !gridCopy[x][y].active;
+    } else {
+      hoveredTiles.forEach(tile => {
+        gridCopy[tile.x][tile.y].active = true
+      })
+    }
     setGrid(gridCopy);
   }
 
   return (
     <Container>
-      <Grid height={height} width={width}>
-        {Object.keys(grid).map(x => {
+      <Grid
+        height={height}
+        width={width}
+        active={isActive}
+        usingBrush={selectedShapeBrush !== "dot"}
+        onMouseLeave={() => setHoveredTiles([])}
+      >
+        {Object.keys(grid).map(y => {
           return (
-            Object.keys(grid[x]).map(y => {
+            Object.keys(grid[y]).map(x => {
+              const hovered = hoveredTiles.some(tile => {
+                return tile.x === x && tile.y === y
+              })
               return (
                 <Tile
                   key={`${x}-${y}`}
-                  active={grid[x][y].active}
+                  active={grid[x][y].active || hovered}
                   onClick={() => selectTile(x, y)}
+                  onMouseEnter={() => handleHover(x, y)}
                 />
               )
             })
@@ -172,7 +257,7 @@ export default ({height, width}: IGridConstructor) => {
       <ButtonContainer>
         {isActive
           ? <StopButton
-              onClick={() => setIsActive(false)}
+              onClick={startSimulation}
             >
               <span />
             </StopButton>
