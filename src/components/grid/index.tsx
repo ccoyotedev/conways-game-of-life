@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../button';
 import styled, { css } from 'styled-components';
 import { TShape } from '../shapeSelector';
+import { TPattern } from '../savedSelector';
 
 const Container = styled.div`
   display: flex;
@@ -81,6 +82,7 @@ interface IGridConstructor {
   height: number;
   width: number;
   selectedShapeBrush: TShape;
+  pattern: TPattern;
 }
 
 interface IGrid {
@@ -91,14 +93,14 @@ interface IGrid {
   }
 }
 
-export default ({height, width, selectedShapeBrush}: IGridConstructor) => {
+export default ({height, width, selectedShapeBrush, pattern}: IGridConstructor) => {
   const [ grid, setGrid ] = useState<IGrid>({});
   const [ isActive, setIsActive ] = useState(false);
   const [ hoveredTiles, setHoveredTiles ] = useState<{x: string, y: string}[]>([])
 
   useEffect(() => {
-    createGrid()
-  }, [height, width]);
+    createGrid(pattern)
+  }, [height, width, pattern]);
 
   useEffect(() => {
     if (selectedShapeBrush) {
@@ -119,13 +121,62 @@ export default ({height, width, selectedShapeBrush}: IGridConstructor) => {
     return () => clearInterval(interval);
   }, [isActive, grid]);
 
-  const createGrid = () => {
-    const newGrid: IGrid = {};
-    for (let y = 0; y < width; y++) {
-      newGrid[y.toString()] = {}
-      for (let x = 0; x < height; x++) {
-        newGrid[y.toString()][x.toString()] = {
-          active: false,
+  const createGrid = (pattern?: TPattern) => {
+    let newGrid: IGrid = {};
+    for (let x = 0; x < width; x++) {
+      newGrid[x.toString()] = {}
+      for (let y = 0; y < height; y++) {
+        if (!pattern) {
+          newGrid[x.toString()][y.toString()] = {
+            active: false,
+          }
+        } else if (pattern === 'Gosper glider gun') {
+          if (
+            x === 1 && y === 6 ||
+            x === 2 && y === 6 ||
+            x === 1 && y === 7 ||
+            x === 2 && y === 7 ||
+            x === 11 && y === 6 ||
+            x === 11 && y === 7 ||
+            x === 11 && y === 8 ||
+            x === 12 && y === 5 ||
+            x === 12 && y === 9 ||
+            x === 13 && y === 4 ||
+            x === 13 && y === 10 ||
+            x === 14 && y === 4 ||
+            x === 14 && y === 10 ||
+            x === 15 && y === 7 ||
+            x === 16 && y === 5 ||
+            x === 16 && y === 9 ||
+            x === 17 && y === 6 ||
+            x === 17 && y === 7 ||
+            x === 17 && y === 8 ||
+            x === 18 && y === 7 ||
+            x === 21 && y === 6 ||
+            x === 21 && y === 5 ||
+            x === 21 && y === 4 ||
+            x === 22 && y === 6 ||
+            x === 22 && y === 5 ||
+            x === 22 && y === 4 ||
+            x === 23 && y === 3 ||
+            x === 23 && y === 7 ||
+            x === 25 && y === 2 ||
+            x === 25 && y === 3 ||
+            x === 25 && y === 7 ||
+            x === 25 && y === 8 ||
+            x === 35 && y === 4 ||
+            x === 35 && y === 5 ||
+            x === 36 && y === 4 ||
+            x === 36 && y === 5
+          ) {
+            newGrid[x.toString()][y.toString()] = {
+              active: true,
+            }
+          } else {
+            newGrid[x.toString()][y.toString()] = {
+              active: false,
+            }
+          }
         }
       }
     }
@@ -205,6 +256,19 @@ export default ({height, width, selectedShapeBrush}: IGridConstructor) => {
             {x: (xN - 1).toString(), y: yN.toString()},
             {x: (xN + 1).toString(), y: yN.toString()},
             {x: xN.toString(), y: (yN + 1).toString()},
+          ]
+        )
+      case "bagel":
+        return setHoveredTiles(
+          [
+            {x: (xN - 1).toString(), y: (yN + 1).toString()},
+            {x: (xN - 1).toString(), y: yN.toString()},
+            {x: (xN - 1).toString(), y: (yN - 1).toString()},
+            {x: xN.toString(), y: (yN - 1).toString()},
+            {x: xN.toString(), y: (yN + 1).toString()},
+            {x: (xN + 1).toString(), y: (yN + 1).toString()},
+            {x: (xN + 1).toString(), y: yN.toString()},
+            {x: (xN + 1).toString(), y: (yN - 1).toString()},
           ]
         )
       default:

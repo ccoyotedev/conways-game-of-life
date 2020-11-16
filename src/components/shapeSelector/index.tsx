@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { css } from 'styled-components';
+import Sidebar from '../sidebar';
 
 const ShapeContainer = styled.div<{ shape: TShape }>`
   display: grid;
@@ -30,6 +31,17 @@ const ShapeContainer = styled.div<{ shape: TShape }>`
             }
           }
         `
+      case 'bagel':
+        return css`
+          span {
+            background-color: white;
+            border: 0.5px solid black;
+            
+            :nth-child(5) {
+              background-color: transparent;
+            }
+          }
+        `
       default:
         return css`
           span {
@@ -53,46 +65,7 @@ const ShapeSelection = styled.div`
   }
 `
 
-const Sidebar = styled.div<{open: boolean}>`
-  width: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: absolute;
-  padding: 12px 0;
-  border: 2px solid white;
-  border-left: none;
-  top: 124px;
-  left: ${({open}) => open ? 0 : '-140px'};
-  box-sizing: border-box;
-  background-color: black;
-  transition: left 300ms ease;
-
-  ${ShapeSelection} {
-    margin: 14px;
-  }
-`
-
-const Tab = styled.div<{open: boolean}>`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  left: ${({open}) => open ? '138px' : '-2px'};
-  top: 124px;
-  border: 2px solid white;
-  border-left: none;
-  border-top-right-radius: 24px;
-  border-bottom-right-radius: 24px;
-  width: 64px;
-  height: 50px;
-  cursor: pointer;
-  background-color: black;
-  z-index: 10;
-  transition: left 300ms ease;
-`
-
-export type TShape = 'dot' | 'crawler' | undefined
+export type TShape = 'dot' | 'crawler' | "bagel" | undefined
 
 const Shape = ({shape}: {shape?: TShape}) => {
   return (
@@ -115,29 +88,26 @@ interface IShapeSelector {
 }
 
 const ShapeSelector = ({ setShapeBrush }: IShapeSelector) => {
-  const [ open, setOpen ] = useState(false);
   const [ selectedShape, setSelectedShape ] = useState<TShape>("dot");
-  const shapes: TShape[] = ["dot", "crawler", undefined];
+  const shapes: TShape[] = ["dot", "crawler", "bagel", undefined];
 
   useEffect(() => {
     setShapeBrush(selectedShape);
   }, [selectedShape])
 
   return (
-    <>
-      <Tab open={open} onClick={() => setOpen(!open)} >
-        <Shape shape={selectedShape} />
-      </Tab>
-      <Sidebar open={open}>
-        {shapes.map((shape, i) => {
-          return (
-            <ShapeSelection onClick={() => setSelectedShape(shape)}>
-              <Shape shape={shape} />
-            </ShapeSelection>
-          )
-        })}
-      </Sidebar>
-    </>
+    <Sidebar
+      tab={<Shape shape={selectedShape} />}
+      top="124px"
+    >
+      {shapes.map((shape) => {
+        return (
+          <ShapeSelection onClick={() => setSelectedShape(shape)}>
+            <Shape shape={shape} />
+          </ShapeSelection>
+        )
+      })}
+    </Sidebar>
   )
 }
 
